@@ -1,0 +1,13 @@
+@(list: Iterable[org.scalajars.web.controllers.Project])(implicit request: Request[_])
+
+
+@main(title = "Browse :: Projects"){
+
+  <ul>
+
+    @for(item <- list){
+      <li><a href="@nav.project(item.name)">@item.name</a></li>
+    }
+  </ul>
+
+}

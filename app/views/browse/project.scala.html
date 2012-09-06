@@ -1,0 +1,16 @@
+@(project: FullProject)(implicit request: Request[_])
+
+
+@main(title = "Project :: " + project.name){
+  <h2>@project.name</h2>
+  <h3>@project.groupId</h3>
+
+  <h4>Artifacts</h4>
+  <ul>
+
+    @for(item <- project.artifacts){
+      <li><a href="">@item</a></li>
+    }
+  </ul>
+
+}

@@ -1,4 +1,4 @@
-package lib
+package org.scalajars.web.lib
 
 import play.api.libs.ws.WS
 import play.core.parsers._

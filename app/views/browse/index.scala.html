@@ -1,0 +1,19 @@
+@(path: String, list: Iterable[org.scalajars.web.controllers.BrowserItem], upPath: Option[String])(implicit request: Request[_])
+
+
+@main(title = "Browse"){
+
+  <h3>@path</h3>
+
+  @upPath.map { path =>
+    <a href="@nav.browse(path)">Up</a>
+  }
+
+  <ul>
+
+    @for(item <- list){
+      <li><a href="@nav.browse(item.fullPath)">@item.name</a></li>
+    }
+  </ul>
+
+}

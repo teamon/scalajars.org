@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <title>ScalaJars</title>
 
-    <link href="@routes.assets("stylesheets/bootstrap.css")" rel="stylesheet"/>
+    <link href="@routes.Assets.at("stylesheets/bootstrap.css")" rel="stylesheet"/>
     <style>
       /*.container { width: 400px; }*/
       body {
@@ -21,16 +21,16 @@
           <a class="brand" href="#">ScalaJars</a>
           <ul class="nav">
             <li class="active"><a href="#">Home</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#contact">Contact</a></li>
+            <li><a href="@nav.projects()">Projects</a></li>
+            <li><a href="@nav.browse("")">Browse</a></li>
           </ul>
           <ul class="nav pull-right">
             @request.session.get("login").map { login =>
               <li><a href="#">Hello @login</a></li>
               <li class="divider-vertical"></li>
-              <li><a href="@routes.auth.signout()">Sign out</a></li>
+              <li><a href="@nav.auth.signout()">Sign out</a></li>
             }.getOrElse {
-              <li><a href="@routes.auth.signin()">Sign in with Github</a></li>
+              <li><a href="@nav.auth.signin()">Sign in with Github</a></li>
             }
           </ul>
         </div>

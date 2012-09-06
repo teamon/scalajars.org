@@ -1,6 +1,8 @@
-package controllers
+package org.scalajars.web.controllers
 
-import lib._
+import org.scalajars.web.nav
+import org.scalajars.web.lib._
+
 import play.api.mvc._
 import play.api.libs.json._
 
@@ -25,23 +27,22 @@ object Auth extends Controller {
   )
 
   implicit def GithubUserReads: Reads[GithubUser] = new Reads[GithubUser]{
-    def reads(json: JsValue) =
-      GithubUser(
-        (json \ "login").as[String],
-        (json \ "email").as[String],
-        (json \ "avatar_url").as[String],
-        (json \ "name").as[String]
-      )
+    def reads(json: JsValue) = GithubUser(
+      (json \ "login").as[String],
+      (json \ "email").as[String],
+      (json \ "avatar_url").as[String],
+      (json \ "name").as[String]
+    )
   }
 
   def signin() = Action { Redirect(GITHUB.signIn) }
 
-  def signout() = Action { Redirect(routes.home()).withSession() }
+  def signout() = Action { Redirect(nav.home()).withSession() }
 
   def callback() = Action { implicit request =>
     params("code").flatMap { code =>
       GITHUB.authenticate(code) map { user =>
-        Redirect(routes.home()).withSession("login" -> user.login)
+        Redirect(nav.home()).withSession("login" -> user.login)
       }
     } getOrElse Redirect(GITHUB.signIn)
   }
