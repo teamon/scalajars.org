@@ -1,4 +1,4 @@
-@(title: String)(content: Html)(implicit request: Request[_])
+@(title: String, activeNav: String = "home")(content: Html)(implicit request: Request[_])
 <!DOCTYPE html>
 <html>
   <head>
@@ -26,9 +26,9 @@
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container">
-          <a class="brand" href="#">ScalaJars</a>
+          <a class="brand" href="/">ScalaJars</a>
           <ul class="nav">
-            <li class="active"><a href="#">Home</a></li>
+            <li class="active"><a href="/">Home</a></li>
             <li><a href="@nav.projects()">Projects</a></li>
             <li><a href="@nav.browse("")">Browse</a></li>
           </ul>

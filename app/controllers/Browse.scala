@@ -8,6 +8,14 @@ import play.api.mvc._
 import scalaz._
 import Scalaz._
 
+
+
+
+
+
+
+
+
 case class BrowserItem(path: String, name: String){
   def fullPath = (path + "/" + name).dropWhile('/'==)
 }
@@ -66,6 +74,12 @@ object ArtifactBrowser {
   }
 }
 
+import org.scalajars.core._
+
+object Browser extends Browser with RedisStoreImpl {
+  def namespace = "scalajars"
+}
+
 object Browse extends Controller {
   def index(path: String) = Action { implicit request =>
     val (artifacts, upPath) = ArtifactBrowser.index(path)
@@ -73,8 +87,10 @@ object Browse extends Controller {
   }
 
   def projects() = Action { implicit request =>
-    val projects = ArtifactBrowser.projects
-    Ok(views.html.browse.projects(projects))
+    Browser.projects.fold(
+      e => BadRequest(e.toString),
+      p => Ok(views.html.browse.projects(p))
+    )
   }
 
   def project(name: String) = Action { implicit request =>

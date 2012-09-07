@@ -30,7 +30,9 @@ object Pom {
 
 case object WrongPath extends Exception
 case object UnsupportedFileType extends Exception
-case object InvalidPomFile extends Exception
+case class InvalidPomFile(pom: String) extends Exception {
+  override def toString = "InvalidaPomFile(%s)".format(pom)
+}
 case object UnknownException extends Exception
 case object ProjectNotFound extends Exception
 case class CombinedException(t1: Throwable, t2: Throwable) extends Exception
@@ -104,14 +106,16 @@ object ArtifactStore {
       groupId     <- model.groupId
       artifactId  <- model.artifactId
       version     <- model.version
-      dependencies <- model.dependencies
     } yield {
+      val dependencies = model.dependencies.map(_.dependency) getOrElse Nil
+
       redis.hmset(namespaced("path-to-project:" + file.artifactPath), Map("name" -> name, "version" -> version))
       redis.hmset(namespaced("projects:" + name), Map("group" -> groupId))
       redis.sadd(namespaced("projects:" + name + ":versions"), version)
+      redis.sadd(namespaced("projects"), name)
 
       for {
-        dep           <- dependencies.dependency
+        dep           <- dependencies
         depGroupId    <- dep.groupId
         depArtifactId <- dep.artifactId
         depVersion    <- dep.version
@@ -122,7 +126,7 @@ object ArtifactStore {
 
       (name, version)
     })
-  }).flatMap(_.toRightDisjunction(InvalidPomFile))
+  }).flatMap(_.toRightDisjunction(InvalidPomFile(Pom.toXml(model).toString)))
 
   def publish(path: String, tmpFile: TemporaryFile) = resolveFileType(path).flatMap { _ match {
     case ArtifactFileType.Pom =>
@@ -163,13 +167,19 @@ object RedisStore {
   def now(): Long = (new java.util.Date).getTime() / 1000 // in seconds
 }
 
+
+import org.scalajars.core._
+
+object Publisher extends Publisher with RedisStoreImpl {
+  def namespace = "scalajars"
+}
+
 object Publish extends Controller {
   def put(path: String) = Action(parse.temporaryFile) { implicit request =>
-    ArtifactStore.publish(path, request.body).fold(
+    Publisher(path, request.body).fold(
       error => {
         Logger.error(error.toString)
         BadRequest(error.getMessage)
-
       },
       success => Ok
     )
