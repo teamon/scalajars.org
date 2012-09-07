@@ -30,6 +30,19 @@ object Pom {
 
 case object WrongPath extends Exception
 case object UnsupportedFileType extends Exception
+case object InvalidPomFile extends Exception
+case object UnknownException extends Exception
+case object ProjectNotFound extends Exception
+case class CombinedException(t1: Throwable, t2: Throwable) extends Exception
+
+object Instances {
+  implicit val ThrowableMonoid = new Monoid[Throwable] {
+    def zero = UnknownException
+    def append(f1: Throwable, f2: => Throwable) = CombinedException(f1, f2)
+  }
+}
+
+import Instances._
 
 object ArtifactFileType {
   sealed abstract class FileType(val ending: String)
@@ -46,6 +59,7 @@ object ArtifactFileType {
 case class ArtifactFile(group: List[String], name: String, version: String, fileName: String, fileType: ArtifactFileType.FileType, temporaryFile: TemporaryFile){
   lazy val path = pathParts.mkString("/")
   lazy val pathParts = (group ::: name :: version :: fileName :: Nil)
+  lazy val artifactPath = (group :: name :: version :: Nil).mkString("/")
 }
 
 object ArtifactStore {
@@ -63,46 +77,79 @@ object ArtifactStore {
   def upload(artifactFile: ArtifactFile) =
     \/.fromTryCatch(artifactFile.temporaryFile.moveTo(new File("/tmp/scalajars" + artifactFile.path), replace = true))
 
-  def storeFileInformation(model: Model, artifactFile: ArtifactFile) = \/.fromTryCatch(pool.withClient { redis =>
+  def storeFileInformation(artifactFile: ArtifactFile) = \/.fromTryCatch(pool.withClient { redis =>
     ("index" /: artifactFile.pathParts){ case (key, x) =>
       redis.sadd(namespaced(key), x)
       key + "/" + x
     }
   })
 
-  def saveModel(path: String, model: Model) = \/.fromTryCatch(pool.withClient { redis =>
-    val artifactPath = path.split('/').dropRight(1).mkString("/")
-    redis.set(namespaced("poms:" + artifactPath), Pom.toXml(model))
+  def saveProjectArtifact(name: String, version: String, file: ArtifactFile) = \/.fromTryCatch(pool.withClient { redis =>
+    redis.sadd(namespaced("projects:" + name + ":" + version + ":artifacts"), file.fileName)
+  })
 
+  def fetchProjectNameAndVersion(file: ArtifactFile) = \/.fromTryCatch(pool.withClient { redis =>
     for {
+      data <- redis.hgetall[String, String](namespaced("path-to-project:" + file.artifactPath))
+      name <- data.get("name")
+      version <- data.get("version")
+    } yield {
+      (name, version)
+    }
+  }).flatMap(_.toRightDisjunction(ProjectNotFound))
+
+  def saveModel(path: String, model: Model, file: ArtifactFile) = \/.fromTryCatch(pool.withClient { redis =>
+    (for {
       name        <- model.name
       groupId     <- model.groupId
       artifactId  <- model.artifactId
       version     <- model.version
+      dependencies <- model.dependencies
     } yield {
+      redis.hmset(namespaced("path-to-project:" + file.artifactPath), Map("name" -> name, "version" -> version))
       redis.hmset(namespaced("projects:" + name), Map("group" -> groupId))
-      redis.sadd(namespaced("projects:" + name + ":artifacts"), artifactId + ":" + version)
-      redis.sadd(namespaced("projects"), name)
-    }
-  })
+      redis.sadd(namespaced("projects:" + name + ":versions"), version)
+
+      for {
+        dep           <- dependencies.dependency
+        depGroupId    <- dep.groupId
+        depArtifactId <- dep.artifactId
+        depVersion    <- dep.version
+        depScope      <- dep.scope
+      } yield {
+        redis.sadd(namespaced("projects:" + name + ":versions:" + version + ":dependencies"), List(depGroupId, depArtifactId, depVersion, depScope).mkString("###"))
+      }
+
+      (name, version)
+    })
+  }).flatMap(_.toRightDisjunction(InvalidPomFile))
 
   def publish(path: String, tmpFile: TemporaryFile) = resolveFileType(path).flatMap { _ match {
     case ArtifactFileType.Pom =>
       for {
-        file    <- getArtifactFile(path, tmpFile)
-        model   <- Pom.loadModel(tmpFile)
-        _       <- saveModel(path, model)
-        _       <- upload(file)
-        _       <- storeFileInformation(model, file)
+        file            <- getArtifactFile(path, tmpFile)
+        model           <- Pom.loadModel(tmpFile)
+        (name, version) <- saveModel(path, model, file)
+        _               <- upload(file)
+        _               <- storeFileInformation(file)
+        _               <- saveProjectArtifact(name, version, file)
+      } yield ()
+
+    case ArtifactFileType.MD5 | ArtifactFileType.SHA1 =>
+      for {
+        file            <- getArtifactFile(path, tmpFile)
+        (name, version) <- fetchProjectNameAndVersion(file)
+        _               <- upload(file)
+        _               <- storeFileInformation(file)
       } yield ()
 
     case _ =>
       for {
-        file    <- getArtifactFile(path, tmpFile)
-        // model   <-
-        // TODO: Validate file!
-        _       <- upload(file)
-        // _       <- storeFileInformation(file)
+        file            <- getArtifactFile(path, tmpFile)
+        (name, version) <- fetchProjectNameAndVersion(file)
+        _               <- upload(file)
+        _               <- storeFileInformation(file)
+        _               <- saveProjectArtifact(name, version, file)
       } yield ()
   }}
 }
@@ -119,7 +166,11 @@ object RedisStore {
 object Publish extends Controller {
   def put(path: String) = Action(parse.temporaryFile) { implicit request =>
     ArtifactStore.publish(path, request.body).fold(
-      error => BadRequest(error.getMessage),
+      error => {
+        Logger.error(error.toString)
+        BadRequest(error.getMessage)
+
+      },
       success => Ok
     )
   }

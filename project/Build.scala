@@ -26,6 +26,8 @@ object ApplicationBuild extends Build {
       sourceGenerators in Compile <+= scalaxb in Compile,
       // generateRuntime := false,
 
+      publishTo := Some("scalajars" at "http://localhost:9000/publish"),
+
 
       templatesImport ++= Seq(
         "org.scalajars.web.nav",

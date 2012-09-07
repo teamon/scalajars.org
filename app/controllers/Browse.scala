@@ -16,7 +16,15 @@ case class Project(name: String){
   def fullPath = name
 }
 
-case class FullProject(name: String, groupId: String, artifacts: Set[String])
+
+case class Dependency(groupId: String, artifactId: String, version: String, scope: String)
+case class ProjectVersion(id: String, artifacts: List[String], dependencies: List[Dependency])
+case class FullProject(name: String, groupId: String, versions: List[ProjectVersion])
+
+object PrintDependency {
+  def sbt(project: FullProject, version: ProjectVersion) =
+    """libraryDependencies += "%s" %%%% "%s" %% "%s" """.format(project.groupId, project.name, version.id)
+}
 
 object ArtifactBrowser {
   import RedisStore._
@@ -26,11 +34,19 @@ object ArtifactBrowser {
   }
 
   def project(name: String) = pool.withClient { redis =>
-    redis.hgetall(namespaced("project:" + name)).map { data =>
+    redis.hgetall(namespaced("projects:" + name)).map { data =>
+      val versions = redis.smembers(namespaced("projects:" + name + ":versions")).map(_.flatten).flatten.toList.sorted.reverse.map { id: String =>
+        val deps = redis.smembers(namespaced("projects:" + name + ":versions:" + id + ":dependencies")).map { _.flatten.map(_.split("###").toList).collect {
+          case depGroupId :: depArtifactId :: depVersion :: depScope :: Nil => Dependency(depGroupId, depArtifactId, depVersion, depScope)
+        } }.flatten.toList
+
+        ProjectVersion(id, redis.smembers(namespaced("projects:" + name + ":" + id + ":artifacts")).map(_.flatten).flatten.toList.sorted, deps)
+      }
+
       FullProject(
         name,
-        data.get("groupId") getOrElse "",
-        redis.smembers(namespaced("projects:" + name + ":artifacts")).map(_.flatten).flatten.toSet
+        data.get("group") getOrElse "",
+        versions
       )
     }
 
