@@ -175,8 +175,8 @@ object Publisher extends Publisher with RedisStoreImpl {
 }
 
 object Publish extends Controller {
-  def put(path: String) = Action(parse.temporaryFile) { implicit request =>
-    Publisher(path, request.body).fold(
+  def put(projectName: String, path: String) = Action(parse.temporaryFile) { implicit request =>
+    Publisher(projectName, path, request.body).fold(
       error => {
         Logger.error(error.toString)
         BadRequest(error.getMessage)

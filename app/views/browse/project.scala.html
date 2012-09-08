@@ -1,72 +1,90 @@
-@(project: FullProject)(implicit request: Request[_])
+@(project: org.scalajars.core.Project)(implicit request: Request[_])
 
 
 @main(title = "Project :: " + project.name){
-  <h2><span>@project.groupId</span> @project.name</h2>
+  <h2>@project.name</h2>
+  <p>@project.description</p>
 
-
-  <h4>Versions</h4>
-  <div class="tabbable tabs-left">
-    <ul class="nav nav-tabs">
-      @for((version, index) <- project.versions.zipWithIndex){
-        <li
-        @if(index == 0) {
-          class="active"
-        }
-        ><a href="#version-@index" data-toggle="tab">@version.id</a></li>
-      }
-    </ul>
-    <div class="tab-content">
-      @for((version, index) <- project.versions.zipWithIndex){
-        <div class="tab-pane
-        @if(index == 0) {
-          active
-        }
-        " id="version-@index">
-
-        <h4>sbt dependency</h4>
-        <pre>@org.scalajars.web.controllers.PrintDependency.sbt(project, version)</pre>
-
-        <h4>Artifacts</h4>
-        <table class="table">
-          <tr>
-            <th>Name</th>
-            <th>MD5</th>
-            <th>SHA1</th>
-            <th>Download</th>
-          </tr>
-          @for(artifact <- version.artifacts){
-            <tr>
-              <td>@artifact</td>
-              <td></td>
-              <td></td>
-              <td><a href="">Download</a></td>
-            </tr>
-          }
-        </table>
-
-        <h4>Library dependencies</h4>
-        <table class="table">
-          <tr>
-            <th>Name</th>
-            <th>Version</th>
-            <th>Scope</th>
-          </tr>
-
-          @for(dep <- version.dependencies){
-            <tr>
-              <td>@{ dep.groupId + "." + dep.artifactId }</td>
-              <td>@dep.version</td>
-              <td>@dep.scope</td>
-            </tr>
-          }
-        </table>
-
-
-
+  <div class="accordion" id="accordion-versions">
+    @for((version, vIdx) <- project.versions.zipWithIndex){
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-versions" href="#accordion-version-@vIdx">@version.id</a>
         </div>
-      }
-    </div>
-  </div>
+        <div id="accordion-version-@vIdx" class="accordion-body collapse">
+          <div class="accordion-inner">
+            <div class="accordion" id="accordion-scalaVersions-@vIdx">
+              @for((scalaVersion, sIdx) <- version.scalaVersions.zipWithIndex){
+                <div class="accordion-group">
+                  <div class="accordion-heading">
+                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-scalaVersions-@vIdx" href="#accordion-scalaVersion-@vIdx-@sIdx">Scala @scalaVersion.id</a>
+                  </div>
+                  <div id="accordion-scalaVersion-@vIdx-@sIdx" class="accordion-body collapse">
+                    <div class="accordion-inner">
 
+
+                      <div class="accordion" id="accordion-artifacts-@vIdx-@sIdx">
+                        @for((artifact, aIdx) <- scalaVersion.artifacts.zipWithIndex){
+                          <div class="accordion-group">
+                            <div class="accordion-heading">
+                              <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-artifacts-@vIdx-@sIdx" href="#accordion-artifacts-@vIdx-@sIdx-@aIdx">
+                                @artifact.id
+                              </a>
+                            </div>
+                            <div id="accordion-artifacts-@vIdx-@sIdx-@aIdx" class="accordion-body collapse">
+                              <div class="accordion-inner">
+
+                                <h4>SBT dependency</h4>
+                                <pre>@org.scalajars.core.PrintDependency.sbt(version, scalaVersion, artifact)</pre>
+
+                                <h4>Files</h4>
+                                <table class="table">
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>MD5</th>
+                                    <th>SHA1</th>
+                                    <th>Download</th>
+                                  </tr>
+
+                                </table>
+
+                                <h4>Library dependencies</h4>
+                                <table class="table">
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Version</th>
+                                    <th>Scope</th>
+                                  </tr>
+                                  @for(dependency <- artifact.dependencies){
+                                    <tr>
+                                      <td>
+                                        @dependency.groupId
+                                        .
+                                        <strong>@dependency.artifactName</strong>
+                                      </td>
+                                      <td>@dependency.version</td>
+                                      <td>@dependency.scope</td>
+                                    </tr>
+                                  }
+                                </table>
+
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+
+
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+          </div>
+        </div>
+      </div>
+    }
+  </div>
 }

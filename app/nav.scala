@@ -13,7 +13,7 @@ object nav extends PlayNavigator {
   val projects = GET on "projects" to Browse.projects
   val project = GET on "projects" / * to Browse.project
 
-  PUT on "publish" / ** to Publish.put
+  PUT on "publish" / * / ** to Publish.put
 
   val auth = new Namespace("auth"){
     val signin = GET on "signin" to Auth.signin

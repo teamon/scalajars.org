@@ -94,7 +94,10 @@ object Browse extends Controller {
   }
 
   def project(name: String) = Action { implicit request =>
-    ArtifactBrowser.project(name).map { project => Ok(views.html.browse.project(project)) } getOrElse NotFound
+    Browser.project(name).fold(
+      e => BadRequest(e.toString),
+      p => Ok(views.html.browse.project(p))
+    )
   }
 
 }

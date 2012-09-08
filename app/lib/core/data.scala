@@ -2,10 +2,27 @@ package org.scalajars.core
 
 import scalaz._, Scalaz._
 
-case class Project(name: String, description: String, artifacts: List[Artifact])
-case class Artifact(id: String, groupId: String, versions: List[Version])
-case class Version(id: String, dependencies: List[Dependency])
-case class Dependency(groupId: String, artifactId: String, version: String)
+
+case class Project(name: String, description: String, versions: List[Version])
+case class Version(id: String, scalaVersions: List[ScalaVersion])
+case class ScalaVersion(id: String, artifacts: List[Artifact])
+case class Artifact(id: String, groupId: String, dependencies: List[Dependency]){
+  lazy val name = groupId + "." + id
+}
+case class Dependency(groupId: String, artifactId: String, version: String, scope: String){
+  lazy val artifactName = artifactId match {
+    case ArtifactId(name, scalaVersion) => name
+    case _ => artifactId
+  }
+}
+
+object ArtifactId {
+  def unapply(name: String) = {
+    val idx = name.lastIndexOf('_')
+    if(idx != -1) some(name.splitAt(idx) :-> (_.drop(1)))
+    else none
+  }
+}
 
 object ArtifactFileType {
   sealed abstract class FileType(val ending: String)

@@ -5,9 +5,10 @@ import play.scalaz.json._
 
 
 object formats {
-  implicit val DependenctFormatz  = formatz3("groupId", "artifactId", "version")(Dependency)(Dependency.unapply(_).get)
-  implicit val VersionFormatz     = formatz2("id", "dependencies")(Version)(Version.unapply(_).get)
-  implicit val ArtifactFormatz    = formatz3("id", "groupId", "versions")(Artifact)(Artifact.unapply(_).get)
+  implicit val DependenctFormatz  = formatz4("groupId", "artifactId", "version", "scope")(Dependency)(Dependency.unapply(_).get)
+  implicit val ArtifactFormatz    = formatz2("id", "groupId")(Artifact(_: String, _: String, Nil))(a => (a.id, a.groupId))
+  implicit val ScalaVersionFormatz = formatz1("id")(ScalaVersion(_: String, Nil))(_.id)
+  implicit val VersionFormatz     = formatz1("id")(Version(_: String, Nil))(_.id)
   implicit val ProjectFormatz     = formatz2("name", "description")(Project(_: String, _: String, Nil))(p => (p.name, p.description))
 }
 
@@ -36,33 +37,87 @@ trait RedisStoreImpl extends Store {
     fromJson[A](Json.parse(new String(bytes))) | (throw new RedisParserException)
   }
 
+  // Required to not override Parse for primiteves
   implicit val ProjectParse = jsonObjectParse[Project]
+  implicit val VersionParse = jsonObjectParse[Version]
+  implicit val ScalaVersionParse = jsonObjectParse[ScalaVersion]
+  implicit val ArtifactParse = jsonObjectParse[Artifact]
+  implicit val DependencyParse = jsonObjectParse[Dependency]
+
+  object keys {
+    def projects =
+      key("projects" :: Nil)
+    def project(project: Project) =
+      projectByName(project.name)
+    def projectByName(name: String) =
+      key("projects" :: name :: Nil)
+    def versions(project: Project) =
+      key("projects" :: project.name :: "versions" :: Nil)
+    def scalaVersions(project: Project, version: Version) =
+      key("projects" :: project.name :: "versions" :: version.id :: "scalaVersions" :: Nil)
+    def artifacts(project: Project, version: Version, scalaVersion: ScalaVersion) =
+      key("projects" :: project.name :: "versions" :: version.id :: "scalaVersions" :: scalaVersion.id :: "artifacts" :: Nil)
+    def dependencies(project: Project, version: Version, scalaVersion: ScalaVersion, artifact: Artifact) =
+      key("projects" :: project.name :: "versions" :: version.id :: "scalaVersions" :: scalaVersion.id :: "artifacts" :: artifact.id :: "dependencies" :: Nil)
+
+    def pathToProject(path: String) = key("path-to-project" :: path :: Nil)
+  }
 
   def listProjects() = withConnection { redis =>
-    redis.smembers[String](key("projects" :: Nil)).map { _.flatten.flatMap { name =>
-      redis.get[Project](key("projects" :: name :: Nil))
+    redis.smembers[String](keys.projects).map { _.flatten.flatMap { name =>
+      redis.get[Project](keys.projectByName(name))
     } }.flatten.toList
   }
 
   def setProject(project: Project) = withConnection { redis =>
-    redis.set(key("projects" :: project.name :: Nil), Json.stringify(toJson(project)))
-    redis.sadd(key("projects" :: Nil), project.name)
+    redis.set(keys.project(project), toJsonString(project))
+    redis.sadd(keys.projects, project.name)
+
+    project.versions.foreach { version =>
+      redis.sadd(keys.versions(project), toJsonString(version))
+      version.scalaVersions.foreach { scalaVersion =>
+        redis.sadd(keys.scalaVersions(project, version), toJsonString(scalaVersion))
+        scalaVersion.artifacts.foreach { artifact =>
+          redis.sadd(keys.artifacts(project, version, scalaVersion), toJsonString(artifact))
+          artifact.dependencies.foreach { dependency =>
+            redis.sadd(keys.dependencies(project, version, scalaVersion, artifact), toJsonString(dependency))
+          }
+        }
+      }
+    }
   }
 
   def setProjectByPath(project: Project, path: String) = withConnection { redis =>
-    redis.set(key("path-to-project" :: path :: Nil), project.name)
+    redis.set(keys.pathToProject(path), project.name)
   }
 
   def getProject(name: String): Error \/ Project = (withConnection { redis =>
-    redis.get[Project](key("projects" :: name :: Nil)).toRightDisjunction(ProjectNotFound)
+    redis.get[Project](keys.projectByName(name)).map { project =>
+      project.copy(versions =
+        redis.smembers[Version](keys.versions(project)).map { _.flatten.map { version =>
+          version.copy(scalaVersions =
+            redis.smembers[ScalaVersion](keys.scalaVersions(project, version)).map { _.flatten.map { scalaVersion =>
+              scalaVersion.copy(artifacts =
+                redis.smembers[Artifact](keys.artifacts(project, version, scalaVersion)).map { _.flatten.map { artifact =>
+                  artifact.copy(dependencies =
+                    redis.smembers[Dependency](keys.dependencies(project, version, scalaVersion, artifact)).map(_.flatten).flatten.toList
+                  )
+                } }.flatten.toList
+              )
+            } }.flatten.toList
+          )
+        } }.flatten.toList
+      )
+    }.toRightDisjunction(ProjectNotFound)
   }).join
 
   def getProjectByPath(path: String): Error \/ Project = getProjectNameByPath(path) >>= getProject
 
   def getProjectNameByPath(path: String): Error \/ String = (withConnection { redis =>
-    redis.get[String](key("path-to-project" :: path :: Nil)).toRightDisjunction(ProjectNotFound)
+    redis.get[String](keys.pathToProject(path)).toRightDisjunction(ProjectNotFound)
   }).join
 
+  def toJsonString[A:Writez](a: A) = Json.stringify(toJson(a))
 
   protected def key(xs: List[String]) = (namespace :: xs).mkString(":")
 
