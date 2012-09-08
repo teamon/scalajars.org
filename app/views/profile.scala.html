@@ -1,0 +1,7 @@
+@(token: UserToken)(implicit request: Request[_], user: User)
+
+@main(title = "Your profile"){
+  <h3>Your publish token</h3>
+  <pre>@token.token</pre>
+
+}(request, Some(user))

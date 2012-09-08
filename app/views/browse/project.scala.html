@@ -1,5 +1,4 @@
-@(project: org.scalajars.core.Project)(implicit request: Request[_])
-
+@(project: Project)(implicit request: Request[_], userOpt: Option[User])
 
 @main(title = "Project :: " + project.name){
   <h2>@project.name</h2>
@@ -35,18 +34,11 @@
                               <div class="accordion-inner">
 
                                 <h4>SBT dependency</h4>
-                                <pre>@org.scalajars.core.PrintDependency.sbt(version, scalaVersion, artifact)</pre>
+                                <pre>@Browser.dependencies.sbt(version, scalaVersion, artifact)</pre>
 
-                                <h4>Files</h4>
-                                <table class="table">
-                                  <tr>
-                                    <th>Name</th>
-                                    <th>MD5</th>
-                                    <th>SHA1</th>
-                                    <th>Download</th>
-                                  </tr>
-
-                                </table>
+                                @for((label, path) <- artifact.files.seq){
+                                  <a class="btn" href="@path">@label</a>
+                                }
 
                                 <h4>Library dependencies</h4>
                                 <table class="table">
@@ -73,7 +65,6 @@
                           </div>
                         }
                       </div>
-
 
 
                     </div>

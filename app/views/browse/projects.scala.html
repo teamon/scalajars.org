@@ -1,13 +1,24 @@
-@(list: List[org.scalajars.core.Project])(implicit request: Request[_])
+@(list: List[Project], searchQuery: Option[String])(implicit request: Request[_], userOpt: Option[User])
 
+@main(title = "Browse :: Projects", activeNav = "projects"){
+  <h2>Browse projects</h2>
 
-@main(title = "Browse :: Projects"){
+  <form class="form-search" action="@nav.projects()" method="GET">
+    <div class="input-append">
+      <input type="text" class="span2 search-query" name="query" value="@searchQuery.getOrElse("")">
+      <button type="submit" class="btn">Search</button>
+    </div>
+  </form>
 
-  <ul>
+  @searchQuery.map { q =>
+    <h3>Search results for "@q" <small><a href="@nav.projects()">Show all projects</a></small></h3>
+  }
 
-    @for(item <- list){
-      <li><a href="@nav.project(item.name)">@item.name</a></li>
-    }
-  </ul>
+  @for(item <- list){
+    <div class="well">
+      <h4><a href="@nav.project(item.name)">@item.name</a></h4>
+      <p>@item.description</p>
+    </div>
+  }
 
 }

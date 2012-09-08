@@ -1,52 +1,42 @@
 package org.scalajars.web.controllers
 
+import org.scalajars.core._
 import org.scalajars.web.nav
 import org.scalajars.web.lib._
+import org.scalajars.web.lib.oauth._
 
 import play.api.mvc._
 import play.api.libs.json._
+import play.api.libs.concurrent.Promise
+
+import scalaz._, Scalaz._
+import play.scalaz._
 
 
-object Auth extends Controller {
+object AuthController extends Controller with ControllerOps {
+  val github = new GithubOAuth2("16b1cf5716436e9e0af5", "447ee8797756ce7a34f502f048f988613e9fe464")
 
-  val GITHUB = new OAuth2[GithubUser](OAuth2Settings(
-    "16b1cf5716436e9e0af5",
-    "952765967dd1af893aefafc991e06519517f3c15",
-    "https://github.com/login/oauth/authorize",
-    "https://github.com/login/oauth/access_token",
-    "https://api.github.com/user"
-  )){
-    def user(body: String) = Json.fromJson(Json.parse(body))
-  }
-
-  case class GithubUser(
-    login: String,
-    email: String,
-    avatar_url: String,
-    name: String
-  )
-
-  implicit def GithubUserReads: Reads[GithubUser] = new Reads[GithubUser]{
-    def reads(json: JsValue) = GithubUser(
-      (json \ "login").as[String],
-      (json \ "email").as[String],
-      (json \ "avatar_url").as[String],
-      (json \ "name").as[String]
-    )
-  }
-
-  def signin() = Action { Redirect(GITHUB.signIn) }
+  def signin() = Action { Redirect(github.signInUrl) }
 
   def signout() = Action { Redirect(nav.home()).withSession() }
 
   def callback() = Action { implicit request =>
-    params("code").flatMap { code =>
-      GITHUB.authenticate(code) map { user =>
-        Redirect(nav.home()).withSession("login" -> user.login)
-      }
-    } getOrElse Redirect(GITHUB.signIn)
+    Async {
+      (for {
+        code <- OptionT(params("code").point[Promise])
+        user <- OptionT(github.authenticate(code))
+      } yield {
+        user
+      }).run.map(_.fold(
+        user => {
+          Users.saveUser(convertUser(user))
+          Redirect(nav.home()).withSession("login" -> user.login)
+        },
+        Redirect(github.signInUrl)
+      ))
+    }
   }
 
-  protected def params[T](key: String)(implicit request: Request[T]) = request.queryString.get(key).flatMap(_.headOption)
+  protected def convertUser(ghuser: GithubUser) = User(ghuser.login, ghuser.email, ghuser.name)
 }
 

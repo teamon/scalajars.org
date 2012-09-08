@@ -7,22 +7,14 @@ import org.scalajars.lib.maven.Model
 import scala.xml._
 
 import play.api.libs.Files.TemporaryFile
+import play.api.Logger
 
 object PomUtils {
-  def readModel(xml: Elem): Result[Model] = \/.fromTryCatch(scalaxb.fromXML[Model](xml))
+  def readModel(xml: Elem): Res[Model] = \/.fromTryCatch(scalaxb.fromXML[Model](xml))
 
   def writeModel(model: Model) = scalaxb.toXML(model, "project", org.scalajars.lib.maven.defaultScope)
 
-  def readXml(file: java.io.File): Result[Elem] = \/.fromTryCatch(XML.loadFile(file))
-
-  // def readProject(model: Model): Result[(String, String, String, String)] = (for {
-  //   artifactId  <- model.artifactId
-  //   groupId     <- model.groupId
-  //   version     <- model.version
-  // } yield {
-  //   (groupId, artifactId, version, model.description | "")
-  // }).toRightDisjunction(InvalidPomFile)
-
+  def readXml(file: java.io.File): Res[Elem] = \/.fromTryCatch(XML.loadFile(file))
 }
 
 trait Publisher {
@@ -34,36 +26,46 @@ trait Publisher {
     lazy val basePath = rawPath.split('/').dropRight(1).mkString("/")
   }
 
-  def apply(projectName: String, path: String, tmpFile: TemporaryFile) = for {
+  def apply(projectName: String, path: Path, tmpFile: TemporaryFile) = for {
     fileType  <- getFileType(path)
-    _         <- fileType match {
+    res       <- fileType match {
       case Pom => for {
         model   <- (Kleisli(readModel) <==< readXml).run(tmpFile.file)
-        version <- getVersion(path, model)
-        project = Project(projectName, model.description | "", version :: Nil)
-
-        _       <- setProject(project)
-        _       <- setProjectByPath(project, basePath(path))
-        // _       <- upload(file)
-      } yield ()
+        version <- getVersion(path, fileType, model)
+        _       <- setProject(Project(projectName, model.description | "", version :: Nil), path.base)
+        _       <- upload(path, tmpFile)
+        r       <- addPathToIndex(path)
+      } yield r
 
       case _ => for {
-        project <- getProjectByPath(basePath(path))
-        // _       <- upload(file)
-      } yield ()
+        _   <- setArtifactFiles(path.base, ArtifactFiles.forPath(path, fileType))
+        _   <- upload(path, tmpFile)
+        r   <- addPathToIndex(path)
+      } yield r
     }
 
-  } yield ()
+  } yield res
 
-  def basePath(path: String) = path.split('/').dropRight(1).mkString("/")
-
-  def upload(file: File): Error \/ Unit = {
+  def upload(path: Path, tmpFile: TemporaryFile): Error \/ Unit = {
+    Logger.trace("Uploading " + path)
     ().right
   }
 
-  def getVersion(path: String, model: Model): Error \/ Version = path.dropWhile('/'==).split('/').reverse.toList match {
+  def addPathToIndex(path: Path): Error \/ Unit = for {
+    (base, last)  <- path.baseAndLast.toRightDisjunction[Error](WrongPath)
+    _             <- makeIndexItems(base, last).map(addToIndex).sequenceU
+  } yield ()
+
+  def makeIndexItems(base: Path, last: String) = {
+    val (_, pkg) = ((Path.root, List[IndexItem]()) /: base.parts){ case ((p, xs), x) =>
+      (p / x, IndexPackage(x, p) :: xs)
+    }
+    IndexFile(last, base) :: pkg
+  }
+
+  def getVersion(path: Path, fileType: ArtifactFileType.FileType, model: Model): Error \/ Version = path.reversed.list match {
     case fileName :: version :: ArtifactId(artifactId, scalaVersion) :: groupId =>
-      Version(version, ScalaVersion(scalaVersion, Artifact(artifactId, groupId.reverse.mkString("."), extractDependencies(model)) :: Nil) :: Nil).right
+      Version(version, ScalaVersion(scalaVersion, Artifact(artifactId, groupId.reverse.mkString("."), extractDependencies(model), ArtifactFiles.forPath(path, fileType)) :: Nil) :: Nil).right
     case _ => WrongPath.left
   }
 
@@ -73,6 +75,6 @@ trait Publisher {
     }.flatten }.flatten.toList
   }
 
-  def getFileType(path: String): Error \/ FileType =
+  def getFileType(path: Path): Error \/ FileType =
     ArtifactFileType.All.find(t => path.endsWith(t.ending)).toRightDisjunction(UnsupportedFileType)
 }

@@ -1,42 +1,55 @@
-@()(implicit request: Request[_])
+@()(implicit request: Request[_], userOpt: Option[User])
 
 @main(title = "Homepage"){
 
+  <div class="hero-unit">
+    <h1>Home for your scala libraries</h1>
+    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+    tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+    quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+    consequat.</p>
+    <p>
+      @userOpt.map { user =>
+        <a href="@nav.profile()" class="btn btn-success btn-large">Show my publish token</a>
+      }.getOrElse {
+        <a href="@nav.auth.signin()" class="btn btn-primary btn-large">Sign in with Github</a>
+      }
+      or
+      <a href="@nav.projects()" class="btn btn-primary btn-large">Browse projects</a>
+    </p>
+  </div>
 
- <!-- Main hero unit for a primary marketing message or call to action -->
-      <div class="hero-unit">
-        <h1>Hello, world!</h1>
-        <p>This is a template for a simple marketing or informational website. It includes a large callout called the hero unit and three supporting pieces of content. Use it as a starting point to create something more unique.</p>
-        <p><a class="btn btn-primary btn-large">Learn more &raquo;</a></p>
-      </div>
-
-      <pre class="prettyprint linenums">
+  <pre class="prettyprint linenums">
 @request.session
-      </pre>
+  </pre>
 
-      <!-- Example row of columns -->
-      <div class="row">
-        <div class="span4">
-          <h2>Heading</h2>
-           <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-          <p><a class="btn" href="#">View details &raquo;</a></p>
-        </div>
-        <div class="span4">
-          <h2>Heading</h2>
-           <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-          <p><a class="btn" href="#">View details &raquo;</a></p>
-       </div>
-        <div class="span4">
-          <h2>Heading</h2>
-          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
-          <p><a class="btn" href="#">View details &raquo;</a></p>
-        </div>
-      </div>
+  <!-- Example row of columns -->
+  <div class="row">
+    <div class="span8">
+      <h2>Configure</h2>
+      <code>build.sbt</code>
+      <pre>publishTo := Some("http://scalajars.org/publish/my-project/my-token")</pre>
 
-      <hr>
+      <h4>Soon...</h4>
+      <code>plugins.sbt</code>
+      <pre>addSbtPlugin("org.scalajars" %% "sbt-plugin" % "0.1.0")</pre>
+      <code>build.sbt</code>
+      <pre>ScalaJars.name := "My project"
+publishTo := ScalaJars.repository</pre>
+      <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+      <p><a class="btn" href="#">View details &raquo;</a></p>
+    </div>
+    <div class="span4">
+      <h2>Recently added</h2>
+       <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+      <p><a class="btn" href="#">View details &raquo;</a></p>
+    </div>
+  </div>
 
-      <footer>
-        <p>&copy; Company 2012</p>
-      </footer>
+  <hr>
+
+  <footer>
+    <p>&copy; Tymon Tobolski 2012 | <a href="http://teamon.eu">teamon.eu</a></p>
+  </footer>
 
 }

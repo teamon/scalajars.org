@@ -8,7 +8,7 @@ import sbtscalaxb.Plugin.ScalaxbKeys._
 object ApplicationBuild extends Build {
 
     val appName         = "scalajars"
-    val appVersion      = "1.0-SNAPSHOT"
+    val appVersion      = "0.1.0-SNAPSHOT"
 
     val appDependencies = Seq(
       "net.debasishg" % "redisclient_2.9.2" % "2.6",
@@ -24,14 +24,13 @@ object ApplicationBuild extends Build {
       packageName in scalaxb in Compile := "org.scalajars.lib.maven",
       xsdSource := new File("http://maven.apache.org/xsd/maven-4.0.0.xsd"),
       sourceGenerators in Compile <+= scalaxb in Compile,
-      // generateRuntime := false,
 
       publishTo := Some("scalajars" at "http://localhost:9000/publish"),
 
-
       templatesImport ++= Seq(
         "org.scalajars.web.nav",
-        "org.scalajars.web.controllers._"
+        "org.scalajars.web.controllers._",
+        "org.scalajars.core._"
       )
     )
 

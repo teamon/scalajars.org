@@ -1,23 +1,13 @@
 package org.scalajars.web.controllers
 
+import org.scalajars.web.lib._
+
 import play.api._
 import play.api.mvc._
 
-
-
-// trait HeadAwareAction[A] extends Action[A]
-
-
-object Application extends Controller {
-  def index() = Action { implicit request =>
+object ApplicationController extends Controller with ControllerOps {
+  def index() = OptUserAction { implicit request => implicit user =>
     Ok(views.html.index())
-  }
-
-  val store = Map(1 -> "Item 1")
-
-  def show(id: Int) = Action {
-    Ok("")
-    // store(id).map(i => LazyOk(i)) getOrElse NotFound
   }
 }
 
