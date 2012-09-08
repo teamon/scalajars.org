@@ -1,9 +1,15 @@
 package org.scalajars.web
 
+import org.scalajars.core._
 import org.scalajars.web.controllers._
 import play.navigator._
 
 object nav extends PlayNavigator {
+  implicit val PathPathParam: PathParam[Path] = new PathParam[Path] {
+    def apply(path: Path) = path.str
+    def unapply(str: String) = Some(Path(str))
+  }
+
   val home = GET on root to ApplicationController.index
 
   val index     = GET on "index" / **   to BrowseController.index

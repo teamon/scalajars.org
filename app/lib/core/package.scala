@@ -16,20 +16,4 @@ package object core {
     def zero = UnknownException
     def append(f1: Throwable, f2: => Throwable) = CombinedException(f1, f2)
   }
-
-  case class Path(parts: IndexedSeq[String]){
-    lazy val str = parts.mkString("/")
-    lazy val list = parts.toList
-    def endsWith(str: String) = parts.lastOption.filter(_.endsWith(str)).isDefined
-    def reversed = Path(parts.reverse)
-    def base = Path(parts.dropRight(1))
-    def baseOption = if(parts.isEmpty) none else some(base)
-    def baseAndLast = parts.lastOption.map(l => (base, l))
-    def /(s: String) = Path(parts :+ s)
-  }
-
-  object Path {
-    def apply(str: String): Path = Path(str.split('/').dropWhile(""==).toIndexedSeq)
-    val root = Path(Vector.empty[String])
-  }
 }

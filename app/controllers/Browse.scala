@@ -10,8 +10,8 @@ import scalaz._
 import Scalaz._
 
 object BrowseController extends Controller with ControllerOps {
-  def index(path: String) = OptUserAction { implicit request => implicit user =>
-    Browser.index(Path(path)).fold(
+  def index(path: Path) = OptUserAction { implicit request => implicit user =>
+    Browser.index(path).fold(
       e => BadRequest(e.toString),
       s => Ok(views.html.browse.index(path, s._1, s._2))
     )

@@ -1,12 +1,12 @@
-@(path: String, upPath: Option[Path], items: Iterable[IndexItem])(implicit request: Request[_], userOpt: Option[User])
+@(path: Path, upPath: Option[Path], items: Iterable[IndexItem])(implicit request: Request[_], userOpt: Option[User])
 
 @main(title = "Browse", activeNav = "index"){
   <h2>Browse artifacts</h2>
 
-  <h3>@path</h3>
+  <h3>@path.str</h3>
 
   @upPath.map { path =>
-    <a href="@nav.index(path.str)">Up</a>
+    <a href="@nav.index(path)">Up</a>
   }
 
   <ul>
@@ -18,7 +18,7 @@
           }
 
           case IndexPackage(name, path) => {
-            <a href="@nav.index((path / name).str)">@name</a>
+            <a href="@nav.index(path / name)">@name</a>
           }
         }
       </li>

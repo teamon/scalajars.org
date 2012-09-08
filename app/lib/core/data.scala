@@ -78,6 +78,23 @@ case class IndexFile(name: String, path: Path) extends IndexItem {
 }
 
 
+case class Path(parts: IndexedSeq[String]){
+  lazy val str = parts.mkString("/")
+  lazy val list = parts.toList
+  def endsWith(str: String) = parts.lastOption.filter(_.endsWith(str)).isDefined
+  def reversed = Path(parts.reverse)
+  def base = Path(parts.dropRight(1))
+  def baseOption = if(parts.isEmpty) none else some(base)
+  def baseAndLast = parts.lastOption.map(l => (base, l))
+  def /(s: String) = Path(parts :+ s)
+}
+
+object Path {
+  def apply(str: String): Path = Path(str.split('/').dropWhile(""==).toIndexedSeq)
+  val root = Path(Vector.empty[String])
+}
+
+
 case object UnknownException extends Exception
 case class CombinedException(t1: Throwable, t2: Throwable) extends Exception
 
