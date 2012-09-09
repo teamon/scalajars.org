@@ -13,5 +13,9 @@ object ProfileController extends Controller with ControllerOps {
   def show() = UserAction { implicit request => implicit user =>
     Users.getUserToken(user) ==> (token => Ok(views.html.profile(token)))
   }
+
+  def resetToken() = UserAction { implicit request => implicit user =>
+    Users.resetUserToken(user) ==> Redirect(nav.profile())
+  }
 }
 

@@ -4,4 +4,8 @@
   <h3>Your publish token</h3>
   <pre>@token.token</pre>
 
+  <form action="@nav.resetToken()" method="POST">
+    <input class="btn btn-danger" type="submit" value="Reset token"/>
+  </form>
+
 }(request, Some(user))

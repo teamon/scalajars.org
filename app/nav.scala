@@ -25,9 +25,8 @@ object nav extends PlayNavigator {
   GET   on "repository" / **      to PublishController.get
   HEAD  on "repository" / **      to PublishController.head
 
-
-
-  val profile   = GET on "profile" to ProfileController.show
+  val profile     = GET on "profile" to ProfileController.show
+  val resetToken  = POST on "resetToken" to ProfileController.resetToken
 
   val auth = new Namespace("auth"){
     val signin    = GET on "signin"   to AuthController.signin
