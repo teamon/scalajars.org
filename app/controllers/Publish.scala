@@ -12,6 +12,5 @@ object PublishController extends Controller with ControllerOps {
   def put(projectName: String, token: UserToken, path: Path) = Action(parse.temporaryFile) { implicit request =>
     Publisher.publish(token, projectName, path, request.body) ==> Ok
   }
-
 }
 

@@ -8,6 +8,7 @@ import scala.xml._
 
 import play.api.libs.Files.TemporaryFile
 import play.api.Logger
+import play.api.Play.{application, current}
 
 object PomUtils {
   def readModel(xml: Elem): Res[Model] = \/.fromTryCatch(scalaxb.fromXML[Model](xml))
@@ -56,8 +57,12 @@ trait Publisher {
     case (Some(user), _) => user.right
   })
 
+  val uploadDir = application.configuration.getString("upload.dir") | "/tmp/scalajars"
+  def uploadFile(path: Path) = new java.io.File(new java.io.File(uploadDir), path.str)
+
   def upload(path: Path, tmpFile: TemporaryFile): Error \/ Unit = {
     Logger.trace("Uploading " + path)
+    tmpFile.moveTo(uploadFile(path), replace = true)
     ().right
   }
 

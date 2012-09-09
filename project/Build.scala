@@ -7,7 +7,7 @@ import sbtscalaxb.Plugin.ScalaxbKeys._
 
 object ApplicationBuild extends Build {
 
-    val appName         = "scalajars"
+    val appName         = "scalajars-web"
     val appVersion      = "0.1.0-SNAPSHOT"
 
     val appDependencies = Seq(
@@ -18,6 +18,7 @@ object ApplicationBuild extends Build {
     )
 
     val main = PlayProject(appName, appVersion, appDependencies, mainLang = SCALA).settings(scalaxbSettings: _*).settings(
+      organization := "org.scalajars",
       scalacOptions ++= Seq("-Xlint", "-deprecation", "-unchecked","-encoding", "utf8"),
       resolvers += "teamon.eu repo" at "http://repo.teamon.eu",
 
@@ -25,7 +26,7 @@ object ApplicationBuild extends Build {
       xsdSource := new File("http://maven.apache.org/xsd/maven-4.0.0.xsd"),
       sourceGenerators in Compile <+= scalaxb in Compile,
 
-      publishTo := Some("scalajars" at "http://localhost:9000/publish"),
+      publishTo := Some("scalajars" at "http://scalajars.org/publish/scalajars/ferko1faofmkpina30o0vb3onj"),
 
       templatesImport ++= Seq(
         "org.scalajars.web.nav",
