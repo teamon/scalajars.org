@@ -1,6 +1,6 @@
 package org.scalajars.web.lib
 
-import org.scalajars.core.User
+import org.scalajars.core._
 import org.scalajars.web.controllers.Users
 import org.scalajars.web.nav
 
@@ -24,4 +24,21 @@ trait ControllerOps {
   protected def getUserFromSession(request: Request[_]) = request.session.get("login").map(Users.getUser).map(_.toOption).join.join
 
   def params(key: String)(implicit request: RequestHeader) = request.queryString.get(key) >>= (_.headOption)
+
+  implicit def EitherUnitToResult(dis: Error \/ Unit) = new {
+    def ==>[R <: Result](f: R) = dis.fold(e => BadRequest(e.toString), _ => f)
+  }
+
+  implicit def EitherOptionToResultFun[A](dis: Error \/ Option[A]) = new {
+    def ==>[R <: Result](f: A => R) = dis.fold(
+      e => BadRequest(e.toString),
+      _.fold(f, NotFound)
+    )
+  }
+
+  implicit def EitherToResultFun[A](dis: Error \/ A) = new {
+    def ==>[R <: Result](f: A => R) = dis.fold(e => BadRequest(e.toString), f)
+  }
+
+
 }

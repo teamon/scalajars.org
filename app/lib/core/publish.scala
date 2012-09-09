@@ -18,7 +18,7 @@ object PomUtils {
 }
 
 trait Publisher {
-  this: Store =>
+  this: Store with Users =>
 
   import PomUtils._
 
@@ -26,13 +26,14 @@ trait Publisher {
     lazy val basePath = rawPath.split('/').dropRight(1).mkString("/")
   }
 
-  def apply(projectName: String, path: Path, tmpFile: TemporaryFile) = for {
+  def publish(token: UserToken, projectName: String, path: Path, tmpFile: TemporaryFile) = for {
+    user      <- authorize(token, projectName)
     fileType  <- getFileType(path)
     res       <- fileType match {
       case Pom => for {
         model   <- (Kleisli(readModel) <==< readXml).run(tmpFile.file)
         version <- getVersion(path, fileType, model)
-        _       <- setProject(Project(projectName, model.description | "", version :: Nil), path.base)
+        _       <- setProject(Project(projectName, model.description | "", user.login, version :: Nil), path.base)
         _       <- upload(path, tmpFile)
         r       <- addPathToIndex(path)
       } yield r
@@ -46,6 +47,15 @@ trait Publisher {
 
   } yield res
 
+  def authorize(token: UserToken, projectName: String): Error \/ User = (for {
+    userOpt    <- getUserByToken(token)
+    projectOpt <- getProject(projectName)
+  } yield (userOpt, projectOpt)) >>= (_ match {
+    case (None, _) => UserNotFound.left
+    case (Some(user), Some(project)) if project.user != user.login => Unauthorized.left
+    case (Some(user), _) => user.right
+  })
+
   def upload(path: Path, tmpFile: TemporaryFile): Error \/ Unit = {
     Logger.trace("Uploading " + path)
     ().right
@@ -53,7 +63,7 @@ trait Publisher {
 
   def addPathToIndex(path: Path): Error \/ Unit = for {
     (base, last)  <- path.baseAndLast.toRightDisjunction[Error](WrongPath)
-    _             <- makeIndexItems(base, last).map(addToIndex).sequenceU
+    _             <- makeIndexItems(base, last).map(addToIndex).sequence[Res, Unit]
   } yield ()
 
   def makeIndexItems(base: Path, last: String) = {

@@ -7,6 +7,6 @@ trait Users {
 
   def saveUser(user: User) = {
     setUser(user)
-    getUserToken(user) | setUserToken(user, UserToken.random)
+    getUserToken(user).map(_.toRightDisjunction(TokenNotFound)).join ||| setUserToken(user, UserToken.random)
   }
 }

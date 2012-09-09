@@ -10,7 +10,7 @@ object formats {
   implicit val ArtifactFormatz    = formatz2("id", "groupId")(Artifact(_: String, _: String, Nil, ArtifactFiles.empty))(a => (a.id, a.groupId))
   implicit val ScalaVersionFormatz = formatz1("id")(ScalaVersion(_: String, Nil))(_.id)
   implicit val VersionFormatz     = formatz1("id")(Version(_: String, Nil))(_.id)
-  implicit val ProjectFormatz     = formatz2("name", "description")(Project(_: String, _: String, Nil))(p => (p.name, p.description))
+  implicit val ProjectFormatz     = formatz3("name", "description", "user")(Project(_: String, _: String, _: String, Nil))(p => (p.name, p.description, p.user))
   implicit val ArtifactFilesFormatz = formatz5("pom", "jar", "war", "sources", "javadoc")(ArtifactFiles.apply)(ArtifactFiles.unapply(_).get)
   implicit val IndexItemFormatz: Formatz[IndexItem] = new Formatz[IndexItem]{
     def writes(item: IndexItem) = item match {
@@ -37,15 +37,16 @@ object formats {
 trait Store {
   def listProjects(): Error \/ List[Project]
   def setProject(project: Project, path: Path): Error \/ Unit
-  def getProject(name: String): Error \/ Project
+  def getProject(name: String): Error \/ Option[Project]
   def searchProjects(term: String): Error \/ List[Project]
   def setArtifactFiles(path: Path, files: ArtifactFiles): Error \/ Unit
   def addToIndex(item: IndexItem): Error \/ Unit
   def getIndex(path: Path): Error \/ Set[IndexItem]
   def getUser(login: String): Error \/ Option[User]
-  def setUser(user: User)
-  def setUserToken(user: User, token: UserToken)
-  def getUserToken(user: User): Error \/ UserToken
+  def setUser(user: User): Error \/ Unit
+  def setUserToken(user: User, token: UserToken): Error \/ Unit
+  def getUserToken(user: User): Error \/ Option[UserToken]
+  def getUserByToken(token: UserToken): Error \/ Option[User]
 }
 
 trait RedisStoreImpl extends Store {
@@ -155,7 +156,7 @@ trait RedisStoreImpl extends Store {
     }
   }
 
-  def getProject(name: String): Error \/ Project = (withConnection { redis =>
+  def getProject(name: String): Error \/ Option[Project] = (withConnection { redis =>
     redis.get[Project](keys.projectByName(name)).map { project =>
       project.copy(versions =
         redis.smembers[Version](keys.versions(project)).map { _.flatten.map { version =>
@@ -173,8 +174,8 @@ trait RedisStoreImpl extends Store {
           )
         } }.flatten.toList
       )
-    }.toRightDisjunction(ProjectNotFound)
-  }).join
+    }
+  })
 
   def searchProjects(term: String): Error \/ List[Project] = withConnection { redis =>
     Logger.trace("root: " + keys.projectsIndexRoot)
@@ -211,7 +212,11 @@ trait RedisStoreImpl extends Store {
   }
 
   def getUserToken(user: User) = withConnection { redis =>
-    redis.get[String](keys.userToToken(user)).toRightDisjunction(TokenNotFound).map(UserToken.apply)
+    redis.get[String](keys.userToToken(user)).map(UserToken.apply)
+  }
+
+  def getUserByToken(token: UserToken) = withConnection { redis =>
+    redis.get[String](keys.tokenToUser(token)).map(getUser) | UserNotFound.left
   }.join
 
   protected def key(xs: List[String]) = (namespace :: xs).mkString(":")

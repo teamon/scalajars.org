@@ -16,7 +16,7 @@
 
   @for(item <- list){
     <div class="well">
-      <h4><a href="@nav.project(item.name)">@item.name</a></h4>
+      <h4><a href="@nav.project(item.name)">@item.name</a> <small>by <a href="http://github.com/@item.user">@item.user</a></small></h4>
       <p>@item.description</p>
     </div>
   }

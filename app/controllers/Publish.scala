@@ -8,15 +8,9 @@ import scalaz._, Scalaz._
 import play.api._
 import play.api.mvc._
 
-object PublishController extends Controller {
-  def put(projectName: String, path: Path) = Action(parse.temporaryFile) { implicit request =>
-    Publisher(projectName, path, request.body).fold(
-      error => {
-        Logger.error(error.toString)
-        BadRequest(error.getMessage)
-      },
-      success => Ok
-    )
+object PublishController extends Controller with ControllerOps {
+  def put(projectName: String, token: UserToken, path: Path) = Action(parse.temporaryFile) { implicit request =>
+    Publisher.publish(token, projectName, path, request.body) ==> Ok
   }
 
 }

@@ -11,10 +11,7 @@ import scalaz._, Scalaz._
 
 object ProfileController extends Controller with ControllerOps {
   def show() = UserAction { implicit request => implicit user =>
-    Users.getUserToken(user).fold(
-      e => BadRequest(e.toString),
-      token => Ok(views.html.profile(token))
-    )
+    Users.getUserToken(user) ==> (token => Ok(views.html.profile(token)))
   }
 }
 

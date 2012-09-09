@@ -8,13 +8,18 @@ import org.scalajars.web.lib.oauth._
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.concurrent.Promise
+import play.api.Play
+import play.api.Play.current
 
 import scalaz._, Scalaz._
 import play.scalaz._
 
 
 object AuthController extends Controller with ControllerOps {
-  val github = new GithubOAuth2("16b1cf5716436e9e0af5", "447ee8797756ce7a34f502f048f988613e9fe464")
+  val github = new GithubOAuth2(
+    Play.application.configuration.getString("oauth.github.clientId") | "",
+    Play.application.configuration.getString("oauth.github.clientSecret") | ""
+  )
 
   def signin() = Action { Redirect(github.signInUrl) }
 

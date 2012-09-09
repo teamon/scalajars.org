@@ -8,7 +8,7 @@ object UserToken {
   def random = UserToken(DigestUtils.newRandomToken())
 }
 
-case class Project(name: String, description: String, versions: List[Version])
+case class Project(name: String, description: String, user: String, versions: List[Version])
 case class Version(id: String, scalaVersions: List[ScalaVersion])
 case class ScalaVersion(id: String, artifacts: List[Artifact])
 case class Artifact(id: String, groupId: String, dependencies: List[Dependency], files: ArtifactFiles){
@@ -106,4 +106,5 @@ case object ArtifactNotFound extends Exception
 case object ArtifactFilesNotFound extends Exception
 case object IndexNotFound extends Exception
 case object TokenNotFound extends Exception
-
+case object UserNotFound extends Exception
+case object Unauthorized extends Exception

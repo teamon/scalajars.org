@@ -10,13 +10,18 @@ object nav extends PlayNavigator {
     def unapply(str: String) = Some(Path(str))
   }
 
+  implicit val UserTokenPathParam: PathParam[UserToken] = new PathParam[UserToken] {
+    def apply(token: UserToken) = token.token
+    def unapply(str: String) = Some(UserToken(str))
+  }
+
   val home = GET on root to ApplicationController.index
 
   val index     = GET on "index" / **   to BrowseController.index
   val projects  = GET on "projects"     to BrowseController.projects
   val project   = GET on "projects" / * to BrowseController.project
 
-  val publish   = PUT on "publish" / * / ** to PublishController.put
+  val publish   = PUT on "publish" / * / * / ** to PublishController.put
 
   val profile   = GET on "profile" to ProfileController.show
 

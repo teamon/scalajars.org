@@ -9,7 +9,7 @@ package object controllers {
   }
 
   object Browser extends Browser with RedisStore
-  object Publisher extends Publisher with RedisStore
+  object Publisher extends Publisher with Users with RedisStore
   object Users extends Users with RedisStore
 
 }
