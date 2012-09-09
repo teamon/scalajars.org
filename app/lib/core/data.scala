@@ -81,12 +81,14 @@ case class IndexFile(name: String, path: Path) extends IndexItem {
 case class Path(parts: IndexedSeq[String]){
   lazy val str = parts.mkString("/")
   lazy val list = parts.toList
+  lazy val absolute = "/" + str
   def endsWith(str: String) = parts.lastOption.filter(_.endsWith(str)).isDefined
   def reversed = Path(parts.reverse)
   def base = Path(parts.dropRight(1))
   def baseOption = if(parts.isEmpty) none else some(base)
   def baseAndLast = parts.lastOption.map(l => (base, l))
   def /(s: String) = Path(parts :+ s)
+  def /(that: Path) = Path(this.parts ++ that.parts)
 }
 
 object Path {

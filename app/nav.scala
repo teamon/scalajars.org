@@ -21,8 +21,9 @@ object nav extends PlayNavigator {
   val projects  = GET on "projects"     to BrowseController.projects
   val project   = GET on "projects" / * to BrowseController.project
 
-  val publish   = PUT on "publish" / * / * / ** to PublishController.put
-  val repo      = GET on "repository" / ** to ((path: String) => _root_.controllers.ExternalAssets.at(Publisher.uploadDir, path))
+  PUT   on "publish" / * / * / ** to PublishController.put
+  GET   on "repository" / **      to PublishController.get
+  HEAD  on "repository" / **      to PublishController.head
 
 
 
