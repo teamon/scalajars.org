@@ -23,18 +23,17 @@
   <div class="row">
     <div class="span8">
       <h2>Configure</h2>
-      <code>build.sbt</code>
-      <pre class="prettyprint">publishTo := Some("http://scalajars.org/publish/my-project/my-token")</pre>
+      <h4>1. Set your publish token</h4>
+      Create file <code>~/.scalajars</code> with you <a href="@nav.profile()">publish token</a>
 
-      <h4>Soon...</h4>
+      <h4>2. Configure sbt build</h4>
       <code>plugins.sbt</code>
       <pre class="prettyprint">addSbtPlugin("org.scalajars" %% "sbt-plugin" % "0.1.0")</pre>
       <code>build.sbt</code>
-      <pre class="prettyprint">seq(ScalaJars.settings:_*)
+      <pre class="prettyprint">seq(scalajarsSettings:_*)
 
-ScalaJars.name := "My project"</pre>
-      <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-      <p><a class="btn" href="#">View details &raquo;</a></p>
+scalajarsProjectName := "my-project"</pre>
+      @*<p><a class="btn" href="#">View details &raquo;</a></p>*@
     </div>
     <div class="span4">
       <h2>Recently added</h2>

@@ -45,6 +45,10 @@ task :stop do
   queue echo_cmd(%[/home/teamon/bin/scalajars-web stop])
 end
 
+task :nginx_log do
+  queue echo_cmd(%[tail -f /home/teamon/logs/nginx.scalajars.org.access.log])
+end
+
 namespace :play do
   desc "Install sbt launcher"
   task :install_launcher do

@@ -47,10 +47,19 @@ object ArtifactFiles {
 }
 
 object ArtifactId {
-  def unapply(name: String) = {
+  def unapply(name: String): Option[(String, String)] = {
     val idx = name.lastIndexOf('_')
-    if(idx != -1) some(name.splitAt(idx) :-> (_.drop(1)))
-    else none
+    if(idx != -1){
+      val (a,b) = (name.splitAt(idx) :-> (_.drop(1)))
+      val idx2 = a.lastIndexOf('_')
+      if(idx2 != -1){
+        some(a.splitAt(idx2) :-> (_.drop(1)))
+      } else {
+        some(a,b)
+      }
+    } else {
+      none
+    }
   }
 }
 
