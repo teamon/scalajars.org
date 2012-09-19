@@ -2,6 +2,7 @@ package org.scalajars
 
 import sbt._
 import sbt.Keys._
+import util.control.Exception.allCatch
 
 object ScalajarsPlugin extends Plugin {
   private[scalajars] sealed trait ScalajarsToken
@@ -10,9 +11,9 @@ object ScalajarsPlugin extends Plugin {
   object ScalajarsToken {
     def apply(string: String) = ScalajarsStringToken(string)
     def apply(file: File) = ScalajarsFileToken(file)
-    def read(token: ScalajarsToken): String = token match {
-      case ScalajarsStringToken(string) => string
-      case ScalajarsFileToken(file)     => IO.read(file).trim
+    def read(token: ScalajarsToken): Either[Throwable, String] = token match {
+      case ScalajarsStringToken(string) => Right(string)
+      case ScalajarsFileToken(file)     => allCatch either IO.read(file).trim
     }
   }
 
@@ -22,7 +23,13 @@ object ScalajarsPlugin extends Plugin {
   val scalajarsSettings = Seq(
     scalajarsToken := ScalajarsToken(Path.userHome / ".scalajars"),
     publishTo <<= (scalajarsProjectName, scalajarsToken) { (name, token) =>
-      Some("scalajars.org publishing" at ("http://scalajars.org/publish/" + name + "/" + ScalajarsToken.read(token)))
+      ScalajarsToken.read(token) match {
+        case Left(ex) =>
+          println(scala.Console.YELLOW + "[warn] sbt-scalajars: " + ex.getMessage + scala.Console.RESET)
+          None
+        case Right(t) =>
+          Some("scalajars.org publishing" at ("http://scalajars.org/publish/" + name + "/" + t))
+      }
     }
   )
 }

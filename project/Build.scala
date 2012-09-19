@@ -11,7 +11,7 @@ object ApplicationBuild extends Build {
     organization := "org.scalajars",
     scalacOptions ++= Seq("-Xlint", "-deprecation", "-unchecked","-encoding", "utf8"),
     resolvers += "teamon.eu repo" at "http://repo.teamon.eu",
-    resolvers += "scalajars repo" at "http://scalajars.org/respository"
+    resolvers += "scalajars repo" at "http://scalajars.org/repository"
   )
 
   val appName         = "scalajars-web"
@@ -21,7 +21,7 @@ object ApplicationBuild extends Build {
     "net.debasishg" % "redisclient_2.9.2" % "2.6",
     "org.scalaz" % "scalaz-core_2.9.2" % "7.0.0-M3",
     "org.scalaz" % "scalaz-typelevel_2.9.2" % "7.0.0-M3",
-    // "eu.teamon" %% "plaz-scalaz" % "0.1.0-SNAPSHOT",
+    // "eu.teamon" %% "play-scalaz" % "0.1.0-SNAPSHOT",
     "eu.teamon" %% "play-navigator" % "0.4.0"
   )
 
@@ -43,7 +43,7 @@ object ApplicationBuild extends Build {
   )
 
   lazy val plugin = Project("sbt-scalajars", file("sbt-scalajars")).settings(commonSettings:_*).settings(
-    version := "0.1.0",
+    version := "0.1.1",
     sbtPlugin := true,
     sbtVersion := "0.11.3",
     scalajarsProjectName := "scalajars"
