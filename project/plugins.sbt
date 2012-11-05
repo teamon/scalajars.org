@@ -9,6 +9,6 @@ resolvers += "scalajars.org repository" at "http://scalajars.org/repository"
 addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "0.7.2")
 
 // Use the Play sbt plugin for Play projects
-addSbtPlugin("play" % "sbt-plugin" % "2.0.3")
+addSbtPlugin("play" % "sbt-plugin" % "2.0.4")
 
 addSbtPlugin("org.scalajars" %% "sbt-scalajars" % "0.1.1")

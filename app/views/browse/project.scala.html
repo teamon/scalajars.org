@@ -37,7 +37,7 @@
                                 <pre>@Browser.dependencies.sbt(version, scalaVersion, artifact)</pre>
 
                                 @for((label, path) <- artifact.files.seq){
-                                  <a class="btn" href="@path">@label</a>
+                                  <a class="btn" href="/repository/@path">@label</a>
                                 }
 
                                 <h4>Library dependencies</h4>
