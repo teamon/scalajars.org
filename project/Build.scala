@@ -21,7 +21,7 @@ object ApplicationBuild extends Build {
     "net.debasishg" % "redisclient_2.9.2" % "2.6",
     "org.scalaz" % "scalaz-core_2.9.2" % "7.0.0-M3",
     "org.scalaz" % "scalaz-typelevel_2.9.2" % "7.0.0-M3",
-    "eu.teamon" %% "play-scalaz" % "0.1.1-SNAPSHOT",
+    "eu.teamon" %% "play-scalaz" % "0.1.2-SNAPSHOT",
     "eu.teamon" %% "play-navigator" % "0.4.0"
   )
 
