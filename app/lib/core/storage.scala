@@ -34,6 +34,15 @@ object formats {
 
 }
 
+object sorting {
+  import scala.Ordering
+
+  implicit val VersionOrdering: Ordering[Version] = Ordering.fromLessThan(_.idSplitted > _.idSplitted)
+  implicit val IndexItemOrdering: Ordering[IndexItem] = Ordering.fromLessThan(_.name < _.name)
+}
+
+import sorting._
+
 trait Store {
   def listProjects(): Error \/ List[Project]
   def setProject(project: Project, path: Path): Error \/ Unit
@@ -41,7 +50,7 @@ trait Store {
   def searchProjects(term: String): Error \/ List[Project]
   def setArtifactFiles(path: Path, files: ArtifactFiles): Error \/ Unit
   def addToIndex(item: IndexItem): Error \/ Unit
-  def getIndex(path: Path): Error \/ Set[IndexItem]
+  def getIndex(path: Path): Error \/ List[IndexItem]
   def getUser(login: String): Error \/ Option[User]
   def setUser(user: User): Error \/ Unit
   def setUserToken(user: User, token: UserToken): Error \/ Unit
@@ -172,18 +181,14 @@ trait RedisStoreImpl extends Store {
               )
             } }.flatten.toList
           )
-        } }.flatten.toList
+        } }.flatten.toList.sorted
       )
     }
   })
 
   def searchProjects(term: String): Error \/ List[Project] = withConnection { redis =>
-    Logger.trace("root: " + keys.projectsIndexRoot)
-    Logger.trace("keys: " + redis.keys[String](keys.projectsIndex("*" + term + "*")))
     redis.keys[String](keys.projectsIndex("*" + term + "*")).map { _.flatten.flatMap { key =>
       val name = key.replace(keys.projectsIndexRoot, "")
-      Logger.trace("key: " + key)
-      Logger.trace("name: " + name)
       redis.get[Project](keys.projectByName(name))
     } } | Nil
   }
@@ -193,7 +198,7 @@ trait RedisStoreImpl extends Store {
   }
 
   def getIndex(path: Path) = withConnection { redis =>
-    redis.smembers[IndexItem](keys.index(path)).map(_.flatten.map(_.withPath(path))).toRightDisjunction(IndexNotFound)
+    redis.smembers[IndexItem](keys.index(path)).map(_.flatten.map(_.withPath(path)).toList.sorted).toRightDisjunction(IndexNotFound)
   }.join
 
   def parts(path: String) = path.dropWhile('/'==).split('/').dropWhile(""==).toList

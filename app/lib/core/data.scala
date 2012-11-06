@@ -1,5 +1,6 @@
 package org.scalajars.core
 
+
 import scalaz._, Scalaz._
 
 case class User(login: String, email: String, name: String)
@@ -9,7 +10,10 @@ object UserToken {
 }
 
 case class Project(name: String, description: String, user: String, versions: List[Version])
-case class Version(id: String, scalaVersions: List[ScalaVersion])
+case class Version(id: String, scalaVersions: List[ScalaVersion]){
+  lazy val idSplitted = id.split("-").head.split("\\.").map(e => parseInt(e) | 0).toList
+  lazy val isSnapshot = id.contains("SNAPSHOT")
+}
 case class ScalaVersion(id: String, artifacts: List[Artifact])
 case class Artifact(id: String, groupId: String, dependencies: List[Dependency], files: ArtifactFiles){
   lazy val name = groupId + "." + id
@@ -76,6 +80,7 @@ object ArtifactFileType {
 }
 
 sealed trait IndexItem {
+  def name: String
   def withPath(path: Path): IndexItem
   def path: Path
 }

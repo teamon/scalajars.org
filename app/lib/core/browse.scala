@@ -11,7 +11,7 @@ trait Browser {
 
   def project(name: String) = getProject(name)
 
-  def index(path: Path): Error \/ (Option[Path], Set[IndexItem]) = getIndex(path).map { items => (path.baseOption, items) }
+  def index(path: Path): Error \/ (Option[Path], List[IndexItem]) = getIndex(path).map { items => (path.baseOption, items) }
 
   object dependencies {
     def sbt(version: Version, scalaVersion: ScalaVersion, artifact: Artifact) =

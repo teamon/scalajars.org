@@ -8,7 +8,9 @@
     @for((version, vIdx) <- project.versions.zipWithIndex){
       <div class="accordion-group">
         <div class="accordion-heading">
-          <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-versions" href="#accordion-version-@vIdx">@version.id</a>
+          <strong>
+            <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion-versions" href="#accordion-version-@vIdx">@version.id</a>
+          </strong>
         </div>
         <div id="accordion-version-@vIdx" class="accordion-body collapse">
           <div class="accordion-inner">

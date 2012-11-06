@@ -3,10 +3,10 @@
 @main(title = "Browse", activeNav = "index"){
   <h2>Browse artifacts</h2>
 
-  <h3>@path.str</h3>
+  <h3>@Html(path.list.mkString("<span class='sep'>/</span>"))</h3>
 
   @upPath.map { path =>
-    <a href="@nav.index(path)">Up</a>
+    <h5><a href="@nav.index(path)">Up</a></h5>
   }
 
   <ul>
@@ -14,7 +14,7 @@
       <li>
         @item match {
           case IndexFile(name, path) => {
-            @name
+            <a href="/repository/@{(path / name).str}">@name</a>
           }
 
           case IndexPackage(name, path) => {
