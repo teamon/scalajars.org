@@ -29,7 +29,7 @@ object formats {
       data(js)
     }
   }
-
+  implicit def Tuple2Formatz[A:Readz:Writez, B:Readz:Writez]: Formatz[(A,B)] = formatz2("_1", "_2")((a:A,b:B) => (a,b))(identity)
   implicit val UserFormatz = formatz3("login", "email", "name")(User)(User.unapply(_).get)
 
 }
@@ -56,6 +56,8 @@ trait Store {
   def setUserToken(user: User, token: UserToken): Error \/ Unit
   def getUserToken(user: User): Error \/ Option[UserToken]
   def getUserByToken(token: UserToken): Error \/ Option[User]
+  def saveRecentlyUpdated(project: Project, version: Version): Error \/ Unit
+  def getRecentlyUpdated: Error \/ List[(String,String)]
 }
 
 trait RedisStoreImpl extends Store {
@@ -86,6 +88,7 @@ trait RedisStoreImpl extends Store {
   implicit val ArtifactFilesParse = jsonObjectParse[ArtifactFiles]
   implicit val IndexItemParse = jsonObjectParse[IndexItem]
   implicit val UserParse = jsonObjectParse[User]
+  implicit def Tuple2Parse(implicit ev: Formatz[(String,String)]): Parse[(String,String)] = jsonObjectParse[(String,String)]
 
   object keys {
     def projects =
@@ -109,6 +112,8 @@ trait RedisStoreImpl extends Store {
 
     def projectsIndex(name: String) = key("projects-index" :: name :: Nil)
     val projectsIndexRoot = key("projects-index" :: "" :: Nil)
+
+    val recentlyUpdated = key("recently-updated" :: Nil)
 
     def pathToArtifactFiles(path: Path) = key("path-to-artifact-files" :: path.list)
     def index(path: Path) = key("index" :: path.list)
@@ -223,6 +228,15 @@ trait RedisStoreImpl extends Store {
   def getUserByToken(token: UserToken) = withConnection { redis =>
     redis.get[String](keys.tokenToUser(token)).map(getUser) | UserNotFound.left
   }.join
+
+  def saveRecentlyUpdated(project: Project, version: Version) = withConnection { redis =>
+    redis.lpush(keys.recentlyUpdated, toJsonString((project.name, version.id)))
+    redis.ltrim(keys.recentlyUpdated, 0, 4)
+  }
+
+  def getRecentlyUpdated = withConnection { redis =>
+    redis.lrange[(String,String)](keys.recentlyUpdated, 0, 4).flatten.flatten.toList
+  }
 
   protected def key(xs: List[String]) = (namespace :: xs).mkString(":")
 

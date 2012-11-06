@@ -1,4 +1,4 @@
-@()(implicit request: Request[_], userOpt: Option[User])
+@(recent: List[(String, String)])(implicit request: Request[_], userOpt: Option[User])
 
 @main(title = "Homepage"){
 
@@ -38,9 +38,19 @@ scalajarsProjectName := "my-project"</pre>
       @*<p><a class="btn" href="#">View details &raquo;</a></p>*@
     </div>
     <div class="span4">
-      <h2>Recently added</h2>
-       <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-      <p><a class="btn" href="#">View details &raquo;</a></p>
+      <h2>Recently updated</h2>
+      <table class="table">
+        <tr>
+          <th>Name</th>
+          <th>Version</th>
+        </tr>
+        @for((name, version) <- recent){
+          <tr>
+            <td><a href="@nav.project(name)">@name</a></td>
+            <td><a href="@nav.project(name)"><small>@version</small></a></td>
+          </tr>
+        }
+      </table>
     </div>
   </div>
 

@@ -34,7 +34,9 @@ trait Publisher {
       case Pom => for {
         model   <- (Kleisli(readModel) <==< readXml).run(tmpFile.file)
         version <- getVersion(path, fileType, model)
-        _       <- setProject(Project(projectName, model.description | "", user.login, version :: Nil), path.base)
+        project = Project(projectName, model.description | "", user.login, version :: Nil)
+        _       <- setProject(project, path.base)
+        -       <- saveRecentlyUpdated(project, version)
         _       <- upload(path, tmpFile)
         r       <- addPathToIndex(path)
       } yield r
